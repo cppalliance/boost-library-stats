@@ -1,18 +1,13 @@
 #!/usr/bin/python3
 
 # Script to collect boost library stats.
-# The first version of this uses direct psycopg2 database access. Could be migrated to django models.
-# Use os.environ for db access such as.
-# 'ENGINE': 'django.db.backends.postgresql',
-# 'NAME': os.environ['DATABASE_NAME'],
-# 'HOST': os.environ['DATABASE_HOST'],
-# 'PORT': os.environ['DATABASE_PORT'],
-# 'USER': os.environ['DATABASE_USER'],
-# 'PASSWORD': os.environ['DATABASE_PASSWORD'],
 #
-# All data is collected into an internal data structure called gitmodules. 
+# All data is collected into an internal data structure called gitmodules.
 # pprint(gitmodules)
 # After it has been gathered, then it is input to the db with a timestamp.
+#
+# Add a crontab entry
+# 0 5 1 * * . $HOME/.web-env-vars && cd $HOME/boost_library_stats && ./scripts/collect_stats.py > /tmp/boost-library-stats.output 2>&1
 
 import os
 import sys
@@ -24,10 +19,22 @@ from pprint import pprint
 from datetime import datetime, timedelta
 from pathlib import Path
 import psycopg2
-# from config import config
 import config
+from django.utils import timezone
+import pytz
 
-dt = datetime.now()
+PROJECT_PATH = Path(__file__).resolve().parents[1]
+sys.path.append(str(PROJECT_PATH))
+import django
+from django.conf import settings
+django.setup()
+
+from apps.boostlibrarystats.models import Stat
+from apps.github.models import PullRequest, Issue
+
+
+#dt = datetime.now()
+dt = timezone.now()
 dt_one_month_ago = dt + timedelta(days=-30.5)
 dt_one_year_ago = dt + timedelta(days=-365)
 
@@ -71,14 +78,17 @@ def sync_github_repos():
     os.chdir(Path(Path(__file__).resolve().parents[0]))
 
     print("Sync repos\n", flush=True)
-    output = subprocess.run(["./sync-repos.py"], capture_output=True, text=True) 
-    print(str(output.stdout) + "\n", flush=True)
+    output = subprocess.run(["./sync-repos.py"], capture_output=True, text=True)
+    print(str(output.stdout)[:1000] + "\n", flush=True)
+    print(str(output.stderr)[:1000] + "\n", flush=True)
     print("Sync prs\n", flush=True)
-    output = subprocess.run(["./sync-prs.py"], capture_output=True, text=True) 
-    print(str(output.stdout) + "\n", flush=True)
+    output = subprocess.run(["./sync-prs.py"], capture_output=True, text=True)
+    print(str(output.stdout)[:1000] + "\n", flush=True)
+    print(str(output.stderr)[:1000] + "\n", flush=True)
     print("Sync issues\n", flush=True)
-    output = subprocess.run(["./sync-issues.py"], capture_output=True, text=True) 
-    print(str(output.stdout) + "\n", flush=True)
+    output = subprocess.run(["./sync-issues.py"], capture_output=True, text=True)
+    print(str(output.stdout)[:1000] + "\n", flush=True)
+    print(str(output.stderr)[:1000] + "\n", flush=True)
 
 def discover_library_list():
     print("Discover library list\n", flush=True)
@@ -112,7 +122,7 @@ def calculate_lines_of_code():
                     with file.open("rt") as f:
                         names[f.name] = sum(
                             1 for line in f
-                            if line.strip() 
+                            if line.strip()
                         )
             # pprint(names)
             lines_of_code=0
@@ -238,104 +248,39 @@ def calculate_dependency_level():
 
 def calculate_open_issues():
     print("Calculate open issues\n", flush=True)
-    conn = psycopg2.connect(
-           database=os.environ['DATABASE_NAME'], user=os.environ['DATABASE_USER'], password=os.environ['DATABASE_PASSWORD'], host=os.environ['DATABASE_HOST'], port=os.environ['DATABASE_PORT']
-        )
-    cursor = conn.cursor()
     for library in library_list:
         pull_requests=0
         issues=0
         all_issues=0
         # print("library is " + library + "\n", flush=True)
-        postgres_query = "select COUNT(*) from github_pullrequest where repo_name = '" + library + "' ;"
-        # print("postgres_query is " + str(postgres_query) + "\n", flush=True)
-        cursor.execute(postgres_query)
-        records_one = cursor.fetchone()
-        # print ("Printing first record", records_one, flush=True)
-        pull_requests=int(records_one[0])
+        my_filter = {}
+        my_filter['repo_name'] = library
+        pull_requests = PullRequest.objects.filter(**my_filter).count()
+        # print("pull_requests is " + str(pull_requests) + "\n", flush=True)
 
-        postgres_query = "select COUNT(*) from github_issue where repo_name = '" + library + "' ;"
-        # print("postgres_query is " + str(postgres_query) + "\n", flush=True)
-        cursor.execute(postgres_query)
-        records_one = cursor.fetchone()
-        # print ("Printing first record", records_one, flush=True)
-        all_issues=int(records_one[0])
+        my_filter = {}
+        my_filter['repo_name'] = library
+        all_issues = Issue.objects.filter(**my_filter).count()
         # all_issues includes pull requests. Discover how many plain issues there are.
         issues=all_issues - pull_requests
 
         gitmodules[library]['issues'] = issues
         gitmodules[library]['pull_requests'] = pull_requests
 
-    # close communication with the PostgreSQL database server
-    if(conn):
-        cursor.close()
-        conn.close()
-
-
-def create_tables():
-    """ create tables in the PostgreSQL database"""
-    print("Create table\n", flush=True)
-    # optionally add this command during testing:
-    # "DROP TABLE stats CASCADE",
-    # not in production.
-    commands = (
-        """
-        CREATE TABLE stats (
-            item_id SERIAL PRIMARY KEY,
-            library VARCHAR(50) NOT NULL,
-            lines_of_code INTEGER,
-            lines_of_tests INTEGER,
-            commits_one_month INTEGER,
-            commits_one_year INTEGER,
-            dependency_level INTEGER,
-            dependency_weight INTEGER,
-            issues INTEGER,
-            pull_requests INTEGER,
-            created timestamptz
-        )
-        """,
-        )
-    conn = None
-    try:
-        # read the connection parameters
-        # params = config()
-
-        # connect to the PostgreSQL server
-        # conn = psycopg2.connect(**params)
-
-        conn = psycopg2.connect(
-           database=os.environ['DATABASE_NAME'], user=os.environ['DATABASE_USER'], password=os.environ['DATABASE_PASSWORD'], host=os.environ['DATABASE_HOST'], port=os.environ['DATABASE_PORT']
-        )
-        cursor = conn.cursor()
-        # create table one by one
-        for command in commands:
-            cursor.execute(command)
-        # close communication with the PostgreSQL database server
-        cursor.close()
-        # commit the changes
-        conn.commit()
-    except (Exception, psycopg2.DatabaseError) as error:
-        print(error)
-    finally:
-        if conn is not None:
-            conn.close()
-
 def insert_data():
     print("Insert data\n", flush=True)
-    conn = psycopg2.connect(
-           database=os.environ['DATABASE_NAME'], user=os.environ['DATABASE_USER'], password=os.environ['DATABASE_PASSWORD'], host=os.environ['DATABASE_HOST'], port=os.environ['DATABASE_PORT']
-        )
-    cursor = conn.cursor()
-
-    postgres_insert_query = """ INSERT INTO stats (library, lines_of_code, lines_of_tests, commits_one_month, commits_one_year, dependency_level, dependency_weight, issues, pull_requests, created ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"""
     for library in library_list:
         # print("library is " + library + "\n", flush=True)
-        record_to_insert = (library, gitmodules[library]['lines_of_code'], gitmodules[library]['lines_of_tests'], gitmodules[library]['commits_one_month'], gitmodules[library]['commits_one_year'],
-            gitmodules[library]['dependency_level'], gitmodules[library]['dependency_weight'], gitmodules[library]['issues'], gitmodules[library]['pull_requests'], dt.isoformat(' ', 'seconds'))
-        # print("record_to_insert is " + str(record_to_insert) + "\n", flush=True)
-        cursor.execute(postgres_insert_query, record_to_insert)
+        record_to_insert = Stat(library=library, lines_of_code=gitmodules[library]['lines_of_code'], lines_of_tests=gitmodules[library]['lines_of_tests'], commits_one_month=gitmodules[library]['commits_one_month'], commits_one_year=gitmodules[library]['commits_one_year'], dependency_level= gitmodules[library]['dependency_level'], dependency_weight=gitmodules[library]['dependency_weight'], issues=gitmodules[library]['issues'], pull_requests=gitmodules[library]['pull_requests'], created=dt.isoformat(' ', 'seconds'))
 
-    # create view
+        # print("record_to_insert is " + str(record_to_insert) + "\n", flush=True)
+        record_to_insert.save()
+
+    # creating a database view
+    conn = psycopg2.connect(
+       database=os.environ['DATABASE_NAME'], user=os.environ['DATABASE_USER'], password=os.environ['DATABASE_PASSWORD'], host=os.environ['DATABASE_HOST'], port=os.environ['DATABASE_PORT']
+    )
+    cursor = conn.cursor()
     view_name="view_" + dt.strftime("%Y_%m_%d")
     postgres_insert_query = "CREATE OR REPLACE VIEW " + view_name + "  as SELECT * from stats where created = '" + dt.isoformat(' ', 'seconds') + "'; "
     # print("postgres_insert_query is " + str(postgres_insert_query) + "\n", flush=True)
@@ -357,7 +302,6 @@ def main():
     calculate_commits()
     calculate_dependency_level()
     calculate_open_issues()
-    create_tables()
     insert_data()
 
 if __name__ == '__main__':

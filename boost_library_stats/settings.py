@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
         # Boost apps
     'apps.github',
+    'apps.boostlibrarystats'
 
 ]
 
