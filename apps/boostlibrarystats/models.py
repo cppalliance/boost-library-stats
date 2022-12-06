@@ -13,6 +13,8 @@ class Stat(models.Model):
     dependency_weight = models.IntegerField()
     issues = models.IntegerField()
     pull_requests = models.IntegerField()
+    issues_all = models.IntegerField(default=0)
+    pull_requests_all = models.IntegerField(default=0)
     created = models.DateTimeField()
     class Meta:
         db_table = "stats"

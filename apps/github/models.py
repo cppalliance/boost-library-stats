@@ -11,6 +11,8 @@ class Issue(models.Model):
     issue_title = models.TextField()
     issue_created_at = models.TextField()
     issue_updated_at = models.TextField()
+    issue_closed_at = models.TextField(null=True, blank=True)
+    issue_state = models.TextField()
 
 class PullRequest(models.Model):
     id = models.BigIntegerField(primary_key=True)
@@ -21,6 +23,8 @@ class PullRequest(models.Model):
     pull_request_title = models.TextField()
     pull_request_created_at = models.TextField()
     pull_request_updated_at = models.TextField()
+    pull_request_closed_at = models.TextField(null=True, blank=True)
+    pull_request_state = models.TextField()
 
 class Repo(models.Model):
     id = models.BigIntegerField(primary_key=True)

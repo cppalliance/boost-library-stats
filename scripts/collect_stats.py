@@ -249,17 +249,42 @@ def calculate_dependency_level():
 def calculate_open_issues():
     print("Calculate open issues\n", flush=True)
     for library in library_list:
+
+        # First, "open" and "closed" issues in _all
+
+        pull_requests_all=0
+        issues_all=0
+        all_issues_all=0
+        # print("library is " + library + "\n", flush=True)
+        my_filter = {}
+        my_filter['repo_name'] = library
+        pull_requests_all = PullRequest.objects.filter(**my_filter).count()
+        # print("pull_requests is " + str(pull_requests) + "\n", flush=True)
+
+        my_filter = {}
+        my_filter['repo_name'] = library
+        all_issues_all = Issue.objects.filter(**my_filter).count()
+        # all_issues includes pull requests. Discover how many plain issues there are.
+        issues_all=all_issues_all - pull_requests_all
+
+        gitmodules[library]['issues_all'] = issues_all
+        gitmodules[library]['pull_requests_all'] = pull_requests_all
+
+        # Next only "open" issues
+
         pull_requests=0
         issues=0
         all_issues=0
         # print("library is " + library + "\n", flush=True)
         my_filter = {}
         my_filter['repo_name'] = library
+        my_filter['pull_request_state'] = 'open'
         pull_requests = PullRequest.objects.filter(**my_filter).count()
         # print("pull_requests is " + str(pull_requests) + "\n", flush=True)
 
         my_filter = {}
         my_filter['repo_name'] = library
+        my_filter['issue_state'] = 'open'
         all_issues = Issue.objects.filter(**my_filter).count()
         # all_issues includes pull requests. Discover how many plain issues there are.
         issues=all_issues - pull_requests
@@ -271,7 +296,7 @@ def insert_data():
     print("Insert data\n", flush=True)
     for library in library_list:
         # print("library is " + library + "\n", flush=True)
-        record_to_insert = Stat(library=library, lines_of_code=gitmodules[library]['lines_of_code'], lines_of_tests=gitmodules[library]['lines_of_tests'], commits_one_month=gitmodules[library]['commits_one_month'], commits_one_year=gitmodules[library]['commits_one_year'], dependency_level= gitmodules[library]['dependency_level'], dependency_weight=gitmodules[library]['dependency_weight'], issues=gitmodules[library]['issues'], pull_requests=gitmodules[library]['pull_requests'], created=dt.isoformat(' ', 'seconds'))
+        record_to_insert = Stat(library=library, lines_of_code=gitmodules[library]['lines_of_code'], lines_of_tests=gitmodules[library]['lines_of_tests'], commits_one_month=gitmodules[library]['commits_one_month'], commits_one_year=gitmodules[library]['commits_one_year'], dependency_level= gitmodules[library]['dependency_level'], dependency_weight=gitmodules[library]['dependency_weight'], issues=gitmodules[library]['issues'], issues_all=gitmodules[library]['issues_all'], pull_requests=gitmodules[library]['pull_requests'], pull_requests_all=gitmodules[library]['pull_requests_all'], created=dt.isoformat(' ', 'seconds'))
 
         # print("record_to_insert is " + str(record_to_insert) + "\n", flush=True)
         record_to_insert.save()

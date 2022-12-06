@@ -25,6 +25,8 @@ field_bindings = {
                 'title': 'pull_request_title',
                 'created_at': 'pull_request_created_at',
                 'updated_at': 'pull_request_updated_at',
+                'closed_at': 'pull_request_closed_at',
+                'state': 'pull_request_state'
                 }
 
 static_field_bindings = {'repo_full_name': 'boostorg/beast'}
@@ -34,4 +36,4 @@ static_field_bindings = {'repo_full_name': 'boostorg/beast'}
 
 repos = Repo.objects.all()
 for repo in repos:
-    full_sync("/repos/" + repo.repo_full_name + "/pulls", "", PullRequest, field_bindings, static_field_bindings={'repo_name': repo.repo_name, 'repo_full_name': repo.repo_full_name}, rfilter={'repo_name': repo.repo_name,'repo_full_name': repo.repo_full_name})
+    full_sync("/repos/" + repo.repo_full_name + "/pulls", "state=all&per_page=100", PullRequest, field_bindings, static_field_bindings={'repo_name': repo.repo_name, 'repo_full_name': repo.repo_full_name}, rfilter={'repo_name': repo.repo_name,'repo_full_name': repo.repo_full_name})
