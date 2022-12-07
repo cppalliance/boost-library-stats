@@ -9,9 +9,9 @@ class Issue(models.Model):
     issue_number = models.IntegerField()
     issue_url = models.TextField()
     issue_title = models.TextField()
-    issue_created_at = models.TextField()
-    issue_updated_at = models.TextField()
-    issue_closed_at = models.TextField(null=True, blank=True)
+    issue_created_at = models.DateTimeField()
+    issue_updated_at = models.DateTimeField()
+    issue_closed_at = models.DateTimeField(null=True, blank=True)
     issue_state = models.TextField()
 
 class PullRequest(models.Model):
@@ -21,9 +21,9 @@ class PullRequest(models.Model):
     pull_request_number = models.IntegerField()
     pull_request_url = models.TextField()
     pull_request_title = models.TextField()
-    pull_request_created_at = models.TextField()
-    pull_request_updated_at = models.TextField()
-    pull_request_closed_at = models.TextField(null=True, blank=True)
+    pull_request_created_at = models.DateTimeField()
+    pull_request_updated_at = models.DateTimeField()
+    pull_request_closed_at = models.DateTimeField(null=True, blank=True)
     pull_request_state = models.TextField()
 
 class Repo(models.Model):
