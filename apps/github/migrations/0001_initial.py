@@ -22,6 +22,7 @@ class Migration(migrations.Migration):
                 ('pull_request_title', models.TextField()),
                 ('pull_request_created_at', models.TextField()),
                 ('pull_request_updated_at', models.TextField()),
+                ('state', models.TextField()),
             ],
         ),
     ]

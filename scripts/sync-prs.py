@@ -25,6 +25,7 @@ field_bindings = {
                 'title': 'pull_request_title',
                 'created_at': 'pull_request_created_at',
                 'updated_at': 'pull_request_updated_at',
+                'state': 'state',
                 }
 
 static_field_bindings = {'repo_full_name': 'boostorg/beast'}

@@ -198,7 +198,6 @@ def calculate_dependency_level():
             result=re.match('^\s*(\S*)',line)
             if result:
                 library=result.group(1).strip()
-
                 if library=="numeric~conversion":
                     library="numeric_conversion"
                 elif library=="numeric~interval":
@@ -207,6 +206,12 @@ def calculate_dependency_level():
                     library="ublas"
                 elif library=="numeric~odeint":
                     library="odeint"
+                # "compatibility" is missing from .gitmodules
+                elif library=="compatibility":
+                    continue
+                # "sync" is missing from .gitmodules
+                elif library=="sync":
+                    continue
 
                 if library=="(unknown)":
                     pass
@@ -238,6 +243,12 @@ def calculate_dependency_level():
                     library="ublas"
                 elif library=="numeric~odeint":
                     library="odeint"
+                # "compatibility" is missing from .gitmodules
+                elif library=="compatibility":
+                    continue
+                # "sync" is missing from .gitmodules
+                elif library=="sync":
+                    continue
 
                 if library=="(unknown)":
                     pass

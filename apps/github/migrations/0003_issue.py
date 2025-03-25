@@ -21,6 +21,7 @@ class Migration(migrations.Migration):
                 ('issue_title', models.TextField()),
                 ('issue_created_at', models.TextField()),
                 ('issue_updated_at', models.TextField()),
+                ('state', models.TextField()),
             ],
         ),
     ]
