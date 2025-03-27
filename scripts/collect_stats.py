@@ -195,7 +195,7 @@ def calculate_dependency_level():
             if result:
                 dependency_level=result.group(1).strip()
         else:
-            result=re.match('^\s*(\S*)',line)
+            result=re.match(r'^\s*(\S*)',line)
             if result:
                 library=result.group(1).strip()
                 if library=="numeric~conversion":
@@ -231,7 +231,7 @@ def calculate_dependency_level():
             if result:
                 dependency_weight=result.group(1).strip()
         else:
-            result=re.match('^\s*(\S*)',line)
+            result=re.match(r'^\s*(\S*)',line)
             if result:
                 library=result.group(1).strip()
 
@@ -314,6 +314,7 @@ def main():
     calculate_dependency_level()
     calculate_open_issues()
     insert_data()
+    print("Completed successfully")
 
 if __name__ == '__main__':
     main()

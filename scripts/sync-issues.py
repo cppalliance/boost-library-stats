@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python
 
 # Run this from root of project
 # poetry run python3 scripts/sync-issues.py
